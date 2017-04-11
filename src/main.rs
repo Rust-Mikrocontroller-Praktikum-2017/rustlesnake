@@ -1,20 +1,12 @@
-#![feature(lang_items)]
-#![feature(const_fn)]
-#![feature(alloc, collections)]
-
 #![no_std]
 #![no_main]
 
 extern crate stm32f7_discovery as stm32f7;
-
 // initialization routines for .data and .bss
 extern crate r0;
-extern crate alloc;
-extern crate collections;
 
 // hardware register structs with accessor methods
 use stm32f7::{system_clock, sdram, lcd, i2c, touch, board, embedded};
-
 
 #[no_mangle]
 pub unsafe extern "C" fn reset() -> ! {
