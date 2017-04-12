@@ -1,0 +1,233 @@
+use collections::vec::Vec;
+
+use super::Tile;
+use super::TileElement;
+use super::TileCoord;
+use super::MoveDirection;
+use super::Snake;
+use super::Grid;
+use randomizer::Randomizer;
+use renderer::*;
+
+const GRID_WIDTH: u16 = 40;
+const GRID_HEIGHT: u16 = 22;
+
+const POWER_UP_ENABLED: bool = false;
+const POWER_UP_SPAWN_PROB: u16 = 10;
+
+pub struct Game<'a, 'b> {
+    renderer: Renderer<'a>,
+    randomizer: &'b mut Randomizer,
+    snake: Snake,
+    grid: Grid,
+    food: TileCoord,
+    food_spawned: bool,
+    game_over: bool,
+    score: u16,
+    seven_segments: Vec<SevenSegment>,
+    power_up: TileCoord,
+    power_up_spawned: bool,
+}
+
+impl<'a, 'b> Game<'a, 'b> {
+    pub fn new(renderer: Renderer<'a>, randomizer: &'b mut Randomizer) -> Game<'a, 'b> {
+        Game {
+            renderer: renderer,
+            randomizer: randomizer,
+            snake: Snake::new(),
+            grid: Grid::new(GRID_WIDTH, GRID_HEIGHT),
+            food: TileCoord::from(0, 0),
+            food_spawned: false,
+            game_over: false,
+            score: 0,
+            seven_segments: vec![SevenSegment::new(460, 5, 0),
+                                 SevenSegment::new(440, 5, 0),
+                                 SevenSegment::new(420, 5, 0)],
+            power_up: TileCoord::from(0, 0),
+            power_up_spawned: false,
+        }
+    }
+
+    pub fn restart(&mut self) {
+        self.snake = Snake::new();
+        self.grid.init_grid();
+        self.food = TileCoord::from(0, 0);
+        self.food_spawned = false;
+        self.game_over = false;
+        self.score = 0;
+        self.power_up = TileCoord::from(0, 0);
+        self.power_up_spawned = false;
+
+        for ss in &mut self.seven_segments {
+            ss.set_digit(0);
+        }
+
+        self.init_game();
+    }
+
+    pub fn init_game(&mut self) {
+        // self.renderer.render_grid(&mut self.grid);
+        self.renderer.clear_screen();
+        self.renderer.render_game_screen();
+        self.add_item(TileElement::Food);
+        self.snake
+            .render_completely(&mut self.renderer, &mut self.grid);
+
+        self.renderer.enable_control_overlay();
+
+        for mut ss in &mut self.seven_segments {
+            self.renderer.render_score(&mut ss);
+        }
+    }
+
+    fn add_item(&mut self, item_element: TileElement) {
+        // self.renderer.render_game_screen();
+
+        let h = self.grid.get_height();
+        let w = self.grid.get_width();
+
+        let random = self.randomizer.randomize();
+        let r_y = (random % h) as u16;
+        let r_x = (random % w) as u16;
+
+        for y in 0..h {
+            for x in 0..w {
+                let new_x = (r_x + x) % w;
+                let new_y = (r_y + y) % h;
+
+                if self.grid.get_tile(new_x, new_y).get_tile_element() == TileElement::Empty {
+                    match item_element {
+                        TileElement::Food => {
+                            self.food = TileCoord::from(new_x, new_y);
+                            self.food_spawned = true;
+                        }
+                        TileElement::PowerUp => {
+                            self.power_up = TileCoord::from(new_x, new_y);
+                            self.power_up_spawned = true;
+                        }
+                        _ => return,
+                    }
+
+                    let tile = self.grid.get_tile_mut(new_x, new_y);
+                    tile.set_tile_element(item_element);
+                    self.renderer.render_tile(tile);
+                    return;
+                }
+            }
+        }
+    }
+
+    fn check_game_end_condition(&self) -> bool {
+        self.check_borders() || self.check_snake_body()
+    }
+
+    fn check_borders(&self) -> bool {
+        let (x, y) = self.snake.get_head_position();
+
+        match self.snake.get_direction() {
+            MoveDirection::Up => y == 0,
+            MoveDirection::Down => y == self.grid.get_height() - 1,
+            MoveDirection::Left => x == 0,
+            MoveDirection::Right => x == self.grid.get_width() - 1,
+            _ => false,
+        }
+    }
+
+    fn check_snake_body(&self) -> bool {
+        let (x, y) = self.snake.get_head_position();
+
+        let (new_x, new_y) = match self.snake.get_direction() {
+            MoveDirection::Up => (x, y - 1),
+            MoveDirection::Down => (x, y + 1),
+            MoveDirection::Left => (x - 1, y),
+            MoveDirection::Right => (x + 1, y),
+            _ => (x, y),
+        };
+
+        self.snake.does_contain(new_x, new_y)
+    }
+
+    fn check_food_reached(&mut self) {
+        let (x, y) = self.snake.get_head_position();
+
+        if self.food_spawned && x == self.food.x && y == self.food.y {
+            self.snake.grow();
+            self.food_spawned = false;
+            self.score += 1;
+            self.update_seven_segments();
+
+            // self.renderer.render_food_screen();
+        }
+    }
+
+    fn update_seven_segments(&mut self) {
+        let mut rem = 1;
+
+        for mut ss in &mut self.seven_segments {
+            ss.set_digit((self.score / rem) % 10);
+            self.renderer.render_score(&mut ss);
+
+            rem *= 10;
+        }
+    }
+
+    fn check_power_up_reached(&mut self) {
+        let (x, y) = self.snake.get_head_position();
+
+        if self.power_up_spawned && x == self.power_up.x && y == self.power_up.y {
+            self.power_up_spawned = false;
+            // self.score += 1;
+            // self.renderer.render_food_screen();
+        }
+    }
+
+    pub fn get_score(&self) -> u16 {
+        self.score
+    }
+
+    pub fn update_direction(&mut self, direction: MoveDirection) {
+        self.snake.set_direction(direction);
+    }
+
+    fn should_spawn_power_up(&mut self) -> bool {
+        self.randomizer.randomize() % POWER_UP_SPAWN_PROB == 0
+    }
+
+    pub fn disable_control_overlay(&mut self) {
+        self.renderer.disable_control_overlay();
+    }
+
+    pub fn step(&mut self) {
+
+        if self.game_over {
+            return;
+        }
+
+        // spawn new food
+        if !self.food_spawned {
+            self.add_item(TileElement::Food);
+
+            // sometimes spawn new power up if enabled
+            if POWER_UP_ENABLED {
+                if !self.power_up_spawned && self.should_spawn_power_up() {
+                    self.add_item(TileElement::PowerUp);
+                }
+            }
+        }
+
+        // move snake if game end conditions are false
+        if !self.check_game_end_condition() {
+            self.snake.make_move();
+            self.check_food_reached();
+
+            if POWER_UP_ENABLED {
+                self.check_power_up_reached()
+            }
+
+            self.snake.render(&mut self.renderer, &mut self.grid);
+        } else {
+            self.renderer.render_game_over_screen();
+            self.game_over = true;
+        }
+    }
+}
