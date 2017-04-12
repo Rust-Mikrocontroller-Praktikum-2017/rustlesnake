@@ -15,15 +15,15 @@ extern crate alloc;
 #[macro_use]
 extern crate collections;
 
-mod renderer;
 mod snake;
 mod randomizer;
+mod renderer;
 
 use stm32f7::{system_clock, sdram, lcd, i2c, touch, board, embedded};
 
-use randomizer::RNG;
-use renderer::*;
 use snake::*;
+use randomizer::*;
+use renderer::*;
 
 const LCD_WIDTH: u16 = 480;
 const LCD_HEIGHT: u16 = 272;
@@ -140,9 +140,9 @@ fn main(hw: board::Hardware) -> ! {
     i2c::init_pins_and_clocks(rcc, &mut gpio);
     let mut i2c_3 = i2c::init(i2c_3);
 
+    let mut rng = randomizer::Rng::init(hw.rng, rcc);
 
 
-    let mut rng = RNG { seed: (system_clock::ticks() as u16) };
     let mut game = Game::new(Renderer::new(LcdExt::new(&mut lcd)),
                              &mut rng,
                              GRID_WIDTH,
@@ -161,7 +161,7 @@ fn main(hw: board::Hardware) -> ! {
         }
 
         let direction = tap(&mut i2c_3);
-        game.update_direction(direction);
+        game.set_direction(direction);
 
         let frame_time = if (game.get_score() as usize) * SCORE_SPEED_MODIFIER < GAME_SPEED {
             max(GAME_SPEED - (game.get_score() as usize) * SCORE_SPEED_MODIFIER,
@@ -179,8 +179,8 @@ fn main(hw: board::Hardware) -> ! {
     }
 }
 
-fn tap(mut i2c: &mut i2c::I2C) -> MoveDirection {
-    let mut direction = MoveDirection::None;
+fn tap(mut i2c: &mut i2c::I2C) -> Direction {
+    let mut direction = Direction::None;
     if let Ok(touches) = touch::touches(&mut i2c) {
         if touches.len() > 0 {
             // Only use primary touch
@@ -199,15 +199,15 @@ fn tap(mut i2c: &mut i2c::I2C) -> MoveDirection {
             if ver ^ hor {
                 direction = if hor {
                     if left {
-                        MoveDirection::Left
+                        Direction::Left
                     } else {
-                        MoveDirection::Right
+                        Direction::Right
                     }
                 } else {
                     if top {
-                        MoveDirection::Up
+                        Direction::Up
                     } else {
-                        MoveDirection::Down
+                        Direction::Down
                     }
                 }
             }

@@ -1,8 +1,8 @@
 use collections::vec::Vec;
 
 use super::Tile;
-use super::TileCoord;
-use super::MoveDirection;
+use super::Position;
+use super::Direction;
 use super::Snake;
 use super::Grid;
 use randomizer::Randomizer;
@@ -18,12 +18,12 @@ pub struct Game<'a, 'b> {
     height: u16,
     snake: Snake,
     grid: Grid,
-    food: TileCoord,
+    food: Position,
     food_spawned: bool,
     game_over: bool,
     score: u16,
     seven_segments: Vec<SevenSegment>,
-    power_up: TileCoord,
+    power_up: Position,
     power_up_spawned: bool,
 }
 
@@ -40,14 +40,14 @@ impl<'a, 'b> Game<'a, 'b> {
             height: height,
             snake: Snake::new(),
             grid: Grid::new(width, height),
-            food: TileCoord::from(0, 0),
+            food: Position::from(0, 0),
             food_spawned: false,
             game_over: false,
             score: 0,
             seven_segments: vec![SevenSegment::new(460, 5, 0),
                                  SevenSegment::new(440, 5, 0),
                                  SevenSegment::new(420, 5, 0)],
-            power_up: TileCoord::from(0, 0),
+            power_up: Position::from(0, 0),
             power_up_spawned: false,
         }
     }
@@ -55,11 +55,11 @@ impl<'a, 'b> Game<'a, 'b> {
     pub fn restart(&mut self) {
         self.snake = Snake::new();
         self.grid.init_grid();
-        self.food = TileCoord::from(0, 0);
+        self.food = Position::from(0, 0);
         self.food_spawned = false;
         self.game_over = false;
         self.score = 0;
-        self.power_up = TileCoord::from(0, 0);
+        self.power_up = Position::from(0, 0);
         self.power_up_spawned = false;
 
         for ss in &mut self.seven_segments {
@@ -102,11 +102,11 @@ impl<'a, 'b> Game<'a, 'b> {
                 if self.grid.get_tile(new_x, new_y) == Tile::Empty {
                     match item_element {
                         Tile::Food => {
-                            self.food = TileCoord::from(new_x, new_y);
+                            self.food = Position::from(new_x, new_y);
                             self.food_spawned = true;
                         }
                         Tile::PowerUp => {
-                            self.power_up = TileCoord::from(new_x, new_y);
+                            self.power_up = Position::from(new_x, new_y);
                             self.power_up_spawned = true;
                         }
                         _ => return,
@@ -128,10 +128,10 @@ impl<'a, 'b> Game<'a, 'b> {
         let (x, y) = self.snake.get_head_position();
 
         match self.snake.get_direction() {
-            MoveDirection::Up => y == 0,
-            MoveDirection::Down => y == self.grid.get_height() - 1,
-            MoveDirection::Left => x == 0,
-            MoveDirection::Right => x == self.grid.get_width() - 1,
+            Direction::Up => y == 0,
+            Direction::Down => y == self.grid.get_height() - 1,
+            Direction::Left => x == 0,
+            Direction::Right => x == self.grid.get_width() - 1,
             _ => false,
         }
     }
@@ -140,10 +140,10 @@ impl<'a, 'b> Game<'a, 'b> {
         let (x, y) = self.snake.get_head_position();
 
         let (new_x, new_y) = match self.snake.get_direction() {
-            MoveDirection::Up => (x, y - 1),
-            MoveDirection::Down => (x, y + 1),
-            MoveDirection::Left => (x - 1, y),
-            MoveDirection::Right => (x + 1, y),
+            Direction::Up => (x, y - 1),
+            Direction::Down => (x, y + 1),
+            Direction::Left => (x - 1, y),
+            Direction::Right => (x + 1, y),
             _ => (x, y),
         };
 
@@ -186,8 +186,8 @@ impl<'a, 'b> Game<'a, 'b> {
         self.score
     }
 
-    pub fn update_direction(&mut self, direction: MoveDirection) {
-        self.snake.set_direction(direction);
+    pub fn set_direction(&mut self, direction: Direction) -> bool {
+        self.snake.set_direction(direction)
     }
 
     fn should_spawn_power_up(&mut self) -> bool {

@@ -8,10 +8,10 @@ const SNAKE_START_Y: u16 = 5;
 const SNAKE_START_LENGTH: u16 = 4;
 
 pub struct Snake {
-    body: VecDeque<TileCoord>,
-    removed_tail: Option<TileCoord>,
-    direction: MoveDirection,
-    next_direction: MoveDirection,
+    body: VecDeque<Position>,
+    removed_tail: Option<Position>,
+    direction: Direction,
+    next_direction: Direction,
 }
 
 impl Snake {
@@ -19,8 +19,8 @@ impl Snake {
         let mut snake = Snake {
             body: VecDeque::new(),
             removed_tail: None,
-            direction: MoveDirection::Right,
-            next_direction: MoveDirection::Right,
+            direction: Direction::Right,
+            next_direction: Direction::Right,
         };
 
         snake.init_snake();
@@ -30,7 +30,7 @@ impl Snake {
     fn init_snake(&mut self) {
         for i in 0..SNAKE_START_LENGTH {
             self.body
-                .push_back(TileCoord::from(SNAKE_START_X - i, SNAKE_START_Y));
+                .push_back(Position::from(SNAKE_START_X - i, SNAKE_START_Y));
         }
     }
 
@@ -59,7 +59,7 @@ impl Snake {
         }
     }
 
-    fn add_new_head(&mut self, head: TileCoord) {
+    fn add_new_head(&mut self, head: Position) {
         self.body.push_front(head);
     }
 
@@ -68,12 +68,12 @@ impl Snake {
         self.removed_tail = None;
     }
 
-    pub fn get_direction(&self) -> MoveDirection {
+    pub fn get_direction(&self) -> Direction {
         self.next_direction
     }
 
-    pub fn set_direction(&mut self, direction: MoveDirection) -> bool {
-        if direction == MoveDirection::None || self.direction == direction ||
+    pub fn set_direction(&mut self, direction: Direction) -> bool {
+        if direction == Direction::None || self.direction == direction ||
            self.direction == direction.opposite() {
             return false;
         }
@@ -108,11 +108,11 @@ impl Snake {
         self.direction = self.next_direction;
 
         match self.direction {
-            MoveDirection::Up => self.add_new_head(TileCoord::from(x, y - 1)),
-            MoveDirection::Down => self.add_new_head(TileCoord::from(x, y + 1)),
-            MoveDirection::Left => self.add_new_head(TileCoord::from(x - 1, y)),
-            MoveDirection::Right => self.add_new_head(TileCoord::from(x + 1, y)),
-            MoveDirection::None => return,
+            Direction::Up => self.add_new_head(Position::from(x, y - 1)),
+            Direction::Down => self.add_new_head(Position::from(x, y + 1)),
+            Direction::Left => self.add_new_head(Position::from(x - 1, y)),
+            Direction::Right => self.add_new_head(Position::from(x + 1, y)),
+            Direction::None => return,
         }
 
         self.removed_tail = self.body.pop_back();
