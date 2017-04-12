@@ -15,15 +15,15 @@ extern crate alloc;
 #[macro_use]
 extern crate collections;
 
-mod renderer;
 mod snake;
 mod randomizer;
+mod renderer;
 
 use stm32f7::{system_clock, sdram, lcd, i2c, touch, board, embedded};
 
-use randomizer::RNG;
-use renderer::*;
 use snake::*;
+use randomizer::*;
+use renderer::*;
 
 const LCD_WIDTH: u16 = 480;
 const LCD_HEIGHT: u16 = 272;
@@ -137,9 +137,8 @@ fn main(hw: board::Hardware) -> ! {
     i2c::init_pins_and_clocks(rcc, &mut gpio);
     let mut i2c_3 = i2c::init(i2c_3);
 
+    let mut rng = randomizer::Rng::init(hw.rng, rcc);
 
-
-    let mut rng = RNG { seed: (system_clock::ticks() as u16) };
     let mut game = Game::new(Renderer::new(LcdExt::new(&mut lcd)), &mut rng);
     game.init_game();
 
