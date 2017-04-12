@@ -1,7 +1,6 @@
 use collections::vec::Vec;
 
 use super::Tile;
-use super::TileElement;
 use super::TileCoord;
 use super::MoveDirection;
 use super::Snake;
@@ -9,15 +8,14 @@ use super::Grid;
 use randomizer::Randomizer;
 use renderer::*;
 
-const GRID_WIDTH: u16 = 40;
-const GRID_HEIGHT: u16 = 22;
-
 const POWER_UP_ENABLED: bool = false;
 const POWER_UP_SPAWN_PROB: u16 = 10;
 
 pub struct Game<'a, 'b> {
     renderer: Renderer<'a>,
     randomizer: &'b mut Randomizer,
+    width: u16,
+    height: u16,
     snake: Snake,
     grid: Grid,
     food: TileCoord,
@@ -30,12 +28,18 @@ pub struct Game<'a, 'b> {
 }
 
 impl<'a, 'b> Game<'a, 'b> {
-    pub fn new(renderer: Renderer<'a>, randomizer: &'b mut Randomizer) -> Game<'a, 'b> {
+    pub fn new(renderer: Renderer<'a>,
+               randomizer: &'b mut Randomizer,
+               width: u16,
+               height: u16)
+               -> Game<'a, 'b> {
         Game {
             renderer: renderer,
             randomizer: randomizer,
+            width: width,
+            height: height,
             snake: Snake::new(),
-            grid: Grid::new(GRID_WIDTH, GRID_HEIGHT),
+            grid: Grid::new(width, height),
             food: TileCoord::from(0, 0),
             food_spawned: false,
             game_over: false,
@@ -69,7 +73,7 @@ impl<'a, 'b> Game<'a, 'b> {
         // self.renderer.render_grid(&mut self.grid);
         self.renderer.clear_screen();
         self.renderer.render_game_screen();
-        self.add_item(TileElement::Food);
+        self.add_item(Tile::Food);
         self.snake
             .render_completely(&mut self.renderer, &mut self.grid);
 
@@ -80,7 +84,7 @@ impl<'a, 'b> Game<'a, 'b> {
         }
     }
 
-    fn add_item(&mut self, item_element: TileElement) {
+    fn add_item(&mut self, item_element: Tile) {
         // self.renderer.render_game_screen();
 
         let h = self.grid.get_height();
@@ -95,22 +99,21 @@ impl<'a, 'b> Game<'a, 'b> {
                 let new_x = (r_x + x) % w;
                 let new_y = (r_y + y) % h;
 
-                if self.grid.get_tile(new_x, new_y).get_tile_element() == TileElement::Empty {
+                if self.grid.get_tile(new_x, new_y) == Tile::Empty {
                     match item_element {
-                        TileElement::Food => {
+                        Tile::Food => {
                             self.food = TileCoord::from(new_x, new_y);
                             self.food_spawned = true;
                         }
-                        TileElement::PowerUp => {
+                        Tile::PowerUp => {
                             self.power_up = TileCoord::from(new_x, new_y);
                             self.power_up_spawned = true;
                         }
                         _ => return,
                     }
 
-                    let tile = self.grid.get_tile_mut(new_x, new_y);
-                    tile.set_tile_element(item_element);
-                    self.renderer.render_tile(tile);
+                    self.grid.set_tile(new_x, new_y, item_element);
+                    self.renderer.render_tile(new_x, new_y, item_element);
                     return;
                 }
             }
@@ -176,8 +179,6 @@ impl<'a, 'b> Game<'a, 'b> {
 
         if self.power_up_spawned && x == self.power_up.x && y == self.power_up.y {
             self.power_up_spawned = false;
-            // self.score += 1;
-            // self.renderer.render_food_screen();
         }
     }
 
@@ -205,12 +206,12 @@ impl<'a, 'b> Game<'a, 'b> {
 
         // spawn new food
         if !self.food_spawned {
-            self.add_item(TileElement::Food);
+            self.add_item(Tile::Food);
 
             // sometimes spawn new power up if enabled
             if POWER_UP_ENABLED {
                 if !self.power_up_spawned && self.should_spawn_power_up() {
-                    self.add_item(TileElement::PowerUp);
+                    self.add_item(Tile::PowerUp);
                 }
             }
         }

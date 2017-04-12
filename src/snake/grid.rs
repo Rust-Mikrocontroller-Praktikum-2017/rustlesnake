@@ -1,9 +1,6 @@
 use collections::vec::Vec;
 use super::Color;
 use super::Tile;
-use super::TileElement;
-
-const TILE_LENGTH: u16 = 12;
 
 pub struct Grid {
     width: u16,
@@ -27,11 +24,7 @@ impl Grid {
 
         for y in 0..self.height {
             for x in 0..self.width {
-                self.grid
-                    .push(Tile::new(x * TILE_LENGTH,
-                                    y * TILE_LENGTH,
-                                    TILE_LENGTH,
-                                    TileElement::Empty));
+                self.grid.push(Tile::Empty);
             }
         }
     }
@@ -44,11 +37,15 @@ impl Grid {
         self.width
     }
 
-    pub fn get_tile(&mut self, x: u16, y: u16) -> &Tile {
+    pub fn set_tile(&mut self, x: u16, y: u16, tile: Tile) {
+        self.grid[(x + y * self.width) as usize] = tile;
+    }
+
+    pub fn get_tile(&mut self, x: u16, y: u16) -> Tile {
         assert!(x < self.width);
         assert!(y < self.height);
 
-        &self.grid[(x + y * self.width) as usize]
+        self.grid[(x + y * self.width) as usize]
     }
 
     pub fn get_tile_mut(&mut self, x: u16, y: u16) -> &mut Tile {

@@ -1,40 +1,20 @@
-use super::TileElement;
+use super::Color;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Tile {
-    x: u16,
-    y: u16,
-    length: u16,
-    element: TileElement,
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Tile {
+    Empty,
+    Snake,
+    Food,
+    PowerUp,
 }
 
 impl Tile {
-    pub fn new(x: u16, y: u16, length: u16, element: TileElement) -> Tile {
-        Tile {
-            x: x,
-            y: y,
-            length: length,
-            element: element,
+    pub fn get_design(&self) -> u16 {
+        match *self {
+            Tile::Empty => Color::Background.value(),
+            Tile::Snake => Color::Snake.value(),
+            Tile::Food => Color::Food.value(),
+            Tile::PowerUp => Color::PowerUp.value(),
         }
-    }
-
-    pub fn get_x(&self) -> u16 {
-        self.x
-    }
-
-    pub fn get_y(&self) -> u16 {
-        self.y
-    }
-
-    pub fn get_length(&self) -> u16 {
-        self.length
-    }
-
-    pub fn get_tile_element(&self) -> TileElement {
-        self.element
-    }
-
-    pub fn set_tile_element(&mut self, element: TileElement) {
-        self.element = element;
     }
 }

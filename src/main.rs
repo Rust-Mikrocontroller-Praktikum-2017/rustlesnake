@@ -30,6 +30,9 @@ const LCD_HEIGHT: u16 = 272;
 const LCD_AXIS_X: u16 = 64;
 const LCD_AXIS_Y: u16 = 64;
 
+const GRID_WIDTH: u16 = 40;
+const GRID_HEIGHT: u16 = 22;
+
 const GAME_SPEED: usize = 250;
 const MAX_GAME_SPEED: usize = 50;
 const SCORE_SPEED_MODIFIER: usize = 5;
@@ -140,7 +143,10 @@ fn main(hw: board::Hardware) -> ! {
 
 
     let mut rng = RNG { seed: (system_clock::ticks() as u16) };
-    let mut game = Game::new(Renderer::new(LcdExt::new(&mut lcd)), &mut rng);
+    let mut game = Game::new(Renderer::new(LcdExt::new(&mut lcd)),
+                             &mut rng,
+                             GRID_WIDTH,
+                             GRID_HEIGHT);
     game.init_game();
 
     let mut last_frame_ticks = system_clock::ticks();

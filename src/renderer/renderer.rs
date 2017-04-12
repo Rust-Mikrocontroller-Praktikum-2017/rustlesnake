@@ -4,10 +4,12 @@ use stm32f7::lcd;
 use snake::*;
 use renderer::*;
 
+const TILE_LENGTH: u16 = 12;
+
 const CENTER_X: u16 = 480 / 2;
 const CENTER_Y: u16 = 272 / 2;
-const T_HEIGHT: u16 = 20;
-const T_WIDTH: u16 = 40;
+const CONTROL_ELEMENT_HEIGHT: u16 = 20;
+const CONTROL_ELEMENT_WIDTH: u16 = 40;
 
 
 pub struct Renderer<'a> {
@@ -22,19 +24,24 @@ impl<'a> Renderer<'a> {
     pub fn render_grid(&mut self, grid: &mut Grid) {
         for y in 0..grid.get_height() {
             for x in 0..grid.get_width() {
-                self.render_tile(&grid.get_tile(x, y));
+                self.render_tile(x, y, grid.get_tile(x, y));
             }
         }
     }
 
-    pub fn render_tile(&mut self, tile: &Tile) {
-        let color = tile.get_tile_element().get_design();
+    pub fn render_tile(&mut self, x: u16, y: u16, tile: Tile) {
+        let color = tile.get_design();
 
-        for y in tile.get_y()..(tile.get_y() + tile.get_length()) {
-            for x in tile.get_x()..(tile.get_x() + tile.get_length()) {
-                self.lcd_ext.print_point_color_layer_one_at(x, y, color);
+        for _y in self.to_pixel_coordinates(y)..self.to_pixel_coordinates(y + 1) {
+            for _x in self.to_pixel_coordinates(x)..self.to_pixel_coordinates(x + 1) {
+                self.lcd_ext
+                    .print_point_color_layer_one_at(_x, _y, color);
             }
         }
+    }
+
+    fn to_pixel_coordinates(&mut self, coord: u16) -> u16 {
+        coord * TILE_LENGTH
     }
 
     pub fn clear_screen(&mut self) {
@@ -42,17 +49,20 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn render_game_screen(&mut self) {
-        self.lcd_ext.lcd
+        self.lcd_ext
+            .lcd
             .set_background_color(lcd::Color::from_argb1555(Color::Background.value()));
     }
 
     pub fn render_food_screen(&mut self) {
-        self.lcd_ext.lcd
+        self.lcd_ext
+            .lcd
             .set_background_color(lcd::Color::from_argb1555(Color::Food.value()));
     }
 
     pub fn render_game_over_screen(&mut self) {
-        self.lcd_ext.lcd
+        self.lcd_ext
+            .lcd
             .set_background_color(lcd::Color::from_argb1555(Color::GameOver.value()));
     }
 
@@ -67,11 +77,11 @@ impl<'a> Renderer<'a> {
     fn render_controls(&mut self, color: u16) {
         let vertical_offset = 100;
         let horizontal_offset = 200;
-        let half_width = T_WIDTH / 2;
+        let half_width = CONTROL_ELEMENT_WIDTH / 2;
 
 
         // Up control
-        self.render_control(CENTER_Y - T_HEIGHT - vertical_offset,
+        self.render_control(CENTER_Y - CONTROL_ELEMENT_HEIGHT - vertical_offset,
                             CENTER_Y - vertical_offset,
                             CENTER_X - half_width,
                             CENTER_X + half_width,
@@ -82,7 +92,7 @@ impl<'a> Renderer<'a> {
 
         // Down control
         self.render_control(CENTER_Y + vertical_offset,
-                            CENTER_Y + vertical_offset + T_HEIGHT,
+                            CENTER_Y + vertical_offset + CONTROL_ELEMENT_HEIGHT,
                             CENTER_X - half_width,
                             CENTER_X + half_width,
                             0,
@@ -91,7 +101,7 @@ impl<'a> Renderer<'a> {
                             color);
 
         // Left control
-        self.render_control(CENTER_X - T_HEIGHT - horizontal_offset,
+        self.render_control(CENTER_X - CONTROL_ELEMENT_HEIGHT - horizontal_offset,
                             CENTER_X - horizontal_offset,
                             CENTER_Y - half_width,
                             CENTER_Y + half_width,
@@ -102,7 +112,7 @@ impl<'a> Renderer<'a> {
 
         // Right control
         self.render_control(CENTER_X + horizontal_offset,
-                            CENTER_X + horizontal_offset + T_HEIGHT,
+                            CENTER_X + horizontal_offset + CONTROL_ELEMENT_HEIGHT,
                             CENTER_Y - half_width,
                             CENTER_Y + half_width,
                             0,
@@ -144,7 +154,7 @@ impl<'a> Renderer<'a> {
     pub fn render_score(&mut self, seven_segment: &mut SevenSegment) {
         // reset seven segments with an eight
         for segment in SevenSegment::segments_for_digit(8) {
-            self.render_rectangle(seven_segment.get_x(),
+            self.render_rectangle_at(seven_segment.get_x(),
                                   seven_segment.get_y(),
                                   segment.get_rectangle(),
                                   Color::Background.value());
@@ -152,14 +162,14 @@ impl<'a> Renderer<'a> {
 
         // set new digit
         for segment in seven_segment.get_segments() {
-            self.render_rectangle(seven_segment.get_x(),
+            self.render_rectangle_at(seven_segment.get_x(),
                                   seven_segment.get_y(),
                                   segment.get_rectangle(),
                                   Color::SevenSegment.value());
         }
     }
 
-    fn render_rectangle(&mut self, start_x: u16, start_y: u16, rectangle: Rectangle, color: u16) {
+    fn render_rectangle_at(&mut self, start_x: u16, start_y: u16, rectangle: Rectangle, color: u16) {
         for y in 0..rectangle.height {
             for x in 0..rectangle.width {
                 self.lcd_ext

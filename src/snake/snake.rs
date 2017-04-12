@@ -36,9 +36,8 @@ impl Snake {
 
     pub fn render_completely(&mut self, renderer: &mut Renderer, grid: &mut Grid) {
         for b in &self.body {
-            let mut tile = grid.get_tile_mut(b.x, b.y);
-            tile.set_tile_element(TileElement::Snake);
-            renderer.render_tile(tile);
+            grid.set_tile(b.x, b.y, Tile::Snake);
+            renderer.render_tile(b.x, b.y, Tile::Snake);
         }
     }
 
@@ -46,17 +45,15 @@ impl Snake {
         // render new head
         {
             let head = self.body.front().unwrap();
-            let mut head_tile = grid.get_tile_mut(head.x, head.y);
-            head_tile.set_tile_element(TileElement::Snake);
-            renderer.render_tile(head_tile);
+            grid.set_tile(head.x, head.y, Tile::Snake);
+            renderer.render_tile(head.x, head.y, Tile::Snake);
         }
 
         // render new empty tile behind tail
         match self.removed_tail {
             Some(ref t) => {
-                let mut tile = grid.get_tile_mut(t.x, t.y);
-                tile.set_tile_element(TileElement::Empty);
-                renderer.render_tile(tile);
+                grid.set_tile(t.x, t.y, Tile::Empty);
+                renderer.render_tile(t.x, t.y, Tile::Empty);
             }
             None => {}
         }
