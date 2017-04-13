@@ -2,6 +2,7 @@
 name = "rustlesnake"
 version = "0.1.0"
 authors = ["c0deba5e <c0deba5e@users.noreply.github.com>", "tkegelmann <tkegelmann@users.noreply.github.com>"]
+license = "MIT/Apache-2.0"
 
 [dependencies]
 cortex-m = "0.1.4"
